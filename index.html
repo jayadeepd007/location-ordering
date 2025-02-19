@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location-Based Ordering System</title>
+
+    <!-- Google Maps API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDTDwvxC-5M2lYvgepnmbyju0Sq6aSDtP8&libraries=places"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        #map {
+            width: 100%;
+            height: 400px;
+            margin-bottom: 10px;
+        }
+        select, button {
+            padding: 10px;
+            margin: 5px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Find Restaurants Near You & Place an Order</h2>
+    <div id="map"></div>
+
+    <label for="restaurantSelect">Choose a Restaurant:</label>
+    <select id="restaurantSelect"></select>
+    <button onclick="placeOrder()">Order via WhatsApp</button>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-app.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/11.3.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDv1kP0u0G5YKGc3e8xjh3eo5KpQ2Gkf5g",
+            authDomain: "cuisinesense-5706c.firebaseapp.com",
+            databaseURL: "https://cuisinesense-5706c-default-rtdb.firebaseio.com",
+            projectId: "cuisinesense-5706c",
+            storageBucket: "cuisinesense-5706c.appspot.com",
+            messagingSenderId: "826269233976",
+            appId: "1:826269233976:web:0eb3400e00eaa7587f87cd",
+            measurementId: "G-ZLJ5ZDJJBH"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        let userLocation = null;
+        
+        function initMap() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    userLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    const map = new google.maps.Map(document.getElementById("map"), {
+                        center: userLocation,
+                        zoom: 15
+                    });
+                    new google.maps.Marker({ position: userLocation, map });
+
+                    // Find nearby restaurants
+                    const service = new google.maps.places.PlacesService(map);
+                    service.nearbySearch({
+                        location: userLocation,
+                        radius: 2000,
+                        type: ["restaurant"]
+                    }, (results, status) => {
+                        if (status === google.maps.places.PlacesServiceStatus.OK) {
+                            const select = document.getElementById("restaurantSelect");
+                            results.forEach((place) => {
+                                const option = document.createElement("option");
+                                option.value = place.name;
+                                option.textContent = place.name;
+                                select.appendChild(option);
+                            });
+                        }
+                    });
+                });
+            } else {
+                alert("Geolocation is not supported by your browser.");
+            }
+        }
+
+        function placeOrder() {
+            const restaurant = document.getElementById("restaurantSelect").value;
+            if (!restaurant) {
+                alert("Please select a restaurant!");
+                return;
+            }
+
+            const orderId = "order_" + new Date().getTime();
+            set(ref(database, "orders/" + orderId), {
+                restaurant: restaurant,
+                location: userLocation
+            }).then(() => {
+                const whatsappMessage = `Order placed at ${restaurant} from https://maps.google.com/?q=${userLocation.lat},${userLocation.lng}`;
+                const whatsappUrl = `https://wa.me/919876543210?text=${encodeURIComponent(whatsappMessage)}`;
+                window.open(whatsappUrl, "_blank");
+            }).catch(error => {
+                console.error("Error saving order: ", error);
+            });
+        }
+
+        window.onload = initMap;
+    </script>
+
+</body>
+</html>
