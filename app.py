@@ -4,8 +4,8 @@ from supabase import create_client, Client
 app = Flask(__name__)
 
 # Supabase Configuration
-SUPABASE_URL = 'https://your-supabase-url.supabase.co'
-SUPABASE_KEY = 'your-anon-key'
+SUPABASE_URL = 'https://pwtvoxldbmcfdpyqbwwz.supabase.co'
+SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB3dHZveGxkYm1jZmRweXFid3d6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3NzEwODUsImV4cCI6MjA1NzM0NzA4NX0.SfarCgmdu-snVtBTYujagTMFMEbNVJr92s79wYBApEc'
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 @app.route('/book', methods=['POST'])
