@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Submission to Supabase</title>
+    <!-- Load Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h2>Submit Your Details</h2>
+    <form id="userForm">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required>
+        <br>
+        <label for="phone">Phone Number:</label>
+        <input type="text" id="phone" name="phone" required>
+        <br>
+        <button type="submit">Submit</button>
+    </form>
+
+    <p id="successMessage">Successfully Booked!</p>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.getElementById("successMessage").style.display = "none";
+        });
+        // Initialize Supabase Client
+        document.addEventListener("DOMContentLoaded", function () {
+            const supabaseUrl = "https://pwtvoxldbmcfdpyqbwwz.supabase.co"; // Replace with your Supabase project URL
+            const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB3dHZveGxkYm1jZmRweXFid3d6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3NzEwODUsImV4cCI6MjA1NzM0NzA4NX0.SfarCgmdu-snVtBTYujagTMFMEbNVJr92s79wYBApEc"; // Replace with your Supabase anon key
+            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey); // FIXED: Use window.supabase
+
+            console.log("Supabase Initialized:", supabase); // Debugging
+
+            document.getElementById("userForm").addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const name = document.getElementById("name").value;
+    const phone = document.getElementById("phone").value;
+
+    console.log("Submitting:", { name, phone });
+
+    const { data, error } = await supabase
+        .from("users")
+        .insert([{ name, phone }], { returning: "representation" }) // Ensure data is returned
+        .select(); // Explicitly request data
+
+    if (error) {
+        console.error("Supabase Error:", error);
+        alert("Error: " + error.message);
+    } else {
+        console.log("Data inserted:", data);
+        let successMessage = document.getElementById("successMessage");
+                successMessage.style.display = "block";
+
+                // ✅ Hide message after 3 seconds
+                setTimeout(() => {
+                    successMessage.style.display = "none";
+                }, 3000);
+        
+        document.getElementById("userForm").reset();
+    }
+});
+
+        });
+    </script>
+</body>
+</html>

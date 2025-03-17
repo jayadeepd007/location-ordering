@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nearby Restaurants</title>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDTDwvxC-5M2lYvgepnmbyju0Sq6aSDtP8&libraries=places"></script>
+    <style>
+        #map {
+            width: 100%;
+            height: 400px;
+            margin-bottom: 20px;
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+        }
+        .restaurant-card {
+            display: none;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 8px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+            background: #fff;
+            text-align: center;
+        }
+        .restaurant-card h3 {
+            margin: 0;
+            font-size: 18px;
+        }
+        .restaurant-card p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #555;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 16px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .btn-green {
+            background-color: #28a745;
+        }
+        .btn-green:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Nearby Restaurants</h2>
+    <div id="map"></div>
+    <label for="restaurantList">Select a Restaurant:</label>
+    <select id="restaurantList">
+        <option value="">Loading nearby restaurants...</option>
+    </select>
+
+    <!-- Restaurant Details Card -->
+    <div id="restaurantCard" class="restaurant-card">
+        <h3 id="restaurantName">Restaurant Name</h3>
+        <p><strong>Address:</strong> <span id="restaurantAddress">-</span></p>
+        <p><strong>Rating:</strong> ⭐ <span id="restaurantRating">-</span> / 5 (<span id="restaurantReviews">-</span> reviews)</p>
+        <a id="bookNowLink" href="#" target="_blank" class="btn btn-green">Book Now</a>
+        <button id="getDirections" class="btn">Get Directions</button>
+    </div>
+
+    <script>
+        let map, userMarker, directionsService, directionsRenderer;
+        let restaurantMarkers = [];
+        let service;
+        let dropdown = document.getElementById("restaurantList");
+        let restaurantCard = document.getElementById("restaurantCard");
+        let bookNowLink = document.getElementById("bookNowLink");
+        let getDirectionsBtn = document.getElementById("getDirections");
+        let restaurantsData = {};
+        let userLocation = null;
+
+        function initMap() {
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer();
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    userLocation = { 
+                        lat: position.coords.latitude, 
+                        lng: position.coords.longitude 
+                    };
+
+                    map = new google.maps.Map(document.getElementById("map"), {
+                        center: userLocation,
+                        zoom: 14
+                    });
+
+                    directionsRenderer.setMap(map);
+
+                    userMarker = new google.maps.Marker({
+                        position: userLocation,
+                        map: map,
+                        title: "Your Location",
+                        icon: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
+                    });
+
+                    fetchNearbyRestaurants(userLocation);
+                }, () => {
+                    alert("Geolocation failed. Please allow location access.");
+                });
+            } else {
+                alert("Geolocation is not supported by your browser.");
+            }
+        }
+
+        function fetchNearbyRestaurants(location) {
+            const request = {
+                location: location,
+                radius: 10000,
+                type: "restaurant"
+            };
+
+            service = new google.maps.places.PlacesService(map);
+            service.nearbySearch(request, (results, status) => {
+                if (status === google.maps.places.PlacesServiceStatus.OK) {
+                    populateDropdown(results.slice(0, 20));
+                } else {
+                    console.error("Places API Error:", status);
+                }
+            });
+        }
+
+        function populateDropdown(restaurants) {
+            dropdown.innerHTML = "";
+            restaurantsData = {};
+
+            let defaultOption = document.createElement("option");
+            defaultOption.value = "";
+            defaultOption.textContent = "Select a restaurant";
+            dropdown.appendChild(defaultOption);
+
+            restaurants.forEach(restaurant => {
+                let option = document.createElement("option");
+                option.value = restaurant.place_id;
+                option.textContent = restaurant.name;
+                dropdown.appendChild(option);
+
+                restaurantsData[restaurant.place_id] = restaurant;
+
+                let marker = new google.maps.Marker({
+                    position: restaurant.geometry.location,
+                    map: map,
+                    title: restaurant.name
+                });
+                restaurantMarkers.push(marker);
+            });
+        }
+
+        dropdown.addEventListener("change", function() {
+            let selectedPlaceId = dropdown.value;
+
+            if (selectedPlaceId && restaurantsData[selectedPlaceId]) {
+                let restaurant = restaurantsData[selectedPlaceId];
+
+                restaurantMarkers.forEach(marker => marker.setMap(null));
+                restaurantMarkers = [];
+
+                let selectedMarker = new google.maps.Marker({
+                    position: restaurant.geometry.location,
+                    map: map,
+                    title: restaurant.name,
+                    icon: "https://maps.google.com/mapfiles/ms/icons/red-dot.png"
+                });
+
+                restaurantMarkers.push(selectedMarker);
+
+                map.setCenter(restaurant.geometry.location);
+                map.setZoom(16);
+
+                updateRestaurantCard(restaurant);
+            }
+        });
+
+        function updateRestaurantCard(restaurant) {
+            document.getElementById("restaurantName").textContent = restaurant.name || "N/A";
+            document.getElementById("restaurantAddress").textContent = restaurant.vicinity || "Address not available";
+            document.getElementById("restaurantRating").textContent = restaurant.rating || "N/A";
+            document.getElementById("restaurantReviews").textContent = restaurant.user_ratings_total || "0";
+
+            bookNowLink.href = 'form1.html';
+
+            getDirectionsBtn.onclick = () => getDirections(restaurant.geometry.location);
+
+            restaurantCard.style.display = "block";
+        }
+
+        function getDirections(destination) {
+            if (!userLocation) {
+                alert("User location not available!");
+                return;
+            }
+
+            const request = {
+                origin: userLocation,
+                destination: destination,
+                travelMode: google.maps.TravelMode.DRIVING
+            };
+
+            directionsService.route(request, (result, status) => {
+                if (status === google.maps.DirectionsStatus.OK) {
+                    directionsRenderer.setDirections(result);
+                } else {
+                    alert("Could not get directions: " + status);
+                }
+            });
+        }
+
+        window.onload = initMap;
+    </script>
+
+</body>
+</html>
