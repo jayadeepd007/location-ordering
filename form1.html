@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Submission to Supabase</title>
+    <!-- Load Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            color: #fff;
+        }
+
+        h2 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        form {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+            color: #333;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 4px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            border-color: #6a11cb;
+            outline: none;
+            box-shadow: 0 0 8px rgba(106, 17, 203, 0.5);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #2575fc, #6a11cb);
+            transform: scale(1.05);
+        }
+
+        #successMessage {
+            margin-top: 15px;
+            text-align: center;
+            color: #28a745;
+            font-weight: bold;
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <h2>Submit Your Details</h2>
+        <form id="userForm">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required>
+            <label for="phone">Phone Number:</label>
+            <input type="text" id="phone" name="phone" required>
+            <button type="submit">Submit</button>
+        </form>
+        <p id="successMessage">Successfully Booked!</p>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            document.getElementById("successMessage").style.display = "none";
+        });
+        // Initialize Supabase Client
+        document.addEventListener("DOMContentLoaded", function () {
+            const supabaseUrl = "https://pwtvoxldbmcfdpyqbwwz.supabase.co"; // Replace with your Supabase project URL
+            const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB3dHZveGxkYm1jZmRweXFid3d6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3NzEwODUsImV4cCI6MjA1NzM0NzA4NX0.SfarCgmdu-snVtBTYujagTMFMEbNVJr92s79wYBApEc"; // Replace with your Supabase anon key
+            const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+            console.log("Supabase Initialized:", supabase);
+
+            document.getElementById("userForm").addEventListener("submit", async function(event) {
+                event.preventDefault();
+
+                const name = document.getElementById("name").value;
+                const phone = document.getElementById("phone").value;
+
+                console.log("Submitting:", { name, phone });
+
+                const { data, error } = await supabase
+                    .from("users")
+                    .insert([{ name, phone }], { returning: "representation" })
+                    .select();
+
+                if (error) {
+                    console.error("Supabase Error:", error);
+                    alert("Error: " + error.message);
+                } else {
+                    console.log("Data inserted:", data);
+                    let successMessage = document.getElementById("successMessage");
+                    successMessage.style.display = "block";
+
+                    setTimeout(() => {
+                        successMessage.style.display = "none";
+                    }, 3000);
+
+                    document.getElementById("userForm").reset();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
